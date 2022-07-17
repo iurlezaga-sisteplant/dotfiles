@@ -14,6 +14,8 @@ set nu
 set termguicolors
 set scrolloff=8
 " set signcolumn=yes
+"
+" set statusline+=%{FugitiveStatusline()}
 
 call plug#begin()
     Plug 'nvim-lua/popup.nvim'
@@ -21,15 +23,12 @@ call plug#begin()
     Plug 'nvim-telescope/telescope.nvim'
 
     Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
-    Plug 'nvim-treesitter/playground'
+    " Plug 'nvim-treesitter/playground'
     Plug 'romgrk/nvim-treesitter-context'
 
     " Themes
-    Plug 'gruvbox-community/gruvbox'
     Plug 'projekt0n/github-nvim-theme'
-    Plug 'marko-cerovac/material.nvim'
 
-    Plug 'ThePrimeagen/vim-be-good'
     Plug 'neovim/nvim-lspconfig'
 
     Plug 'tpope/vim-fugitive'
@@ -46,20 +45,37 @@ call plug#begin()
     Plug 'hrsh7th/cmp-vsnip'
     Plug 'hrsh7th/vim-vsnip'
     Plug 'ellisonleao/glow.nvim', {'branch': 'main'}
-    Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
     Plug 'windwp/nvim-ts-autotag'
     Plug 'windwp/nvim-autopairs'
+
+    Plug 'kyazdani42/nvim-web-devicons' " optional, for file icons
+    Plug 'kyazdani42/nvim-tree.lua'
+
+    Plug 'sindrets/diffview.nvim'
 call plug#end()
 
 let g:material_style = "darker"
-colorscheme material 
+colorscheme github_dark 
 
 let mapleader = " "
 " Remaps
 inoremap kj <Esc> 
-nnoremap <leader>p <cmd>lua require('telescope.builtin').find_files()<cr>
+
+nnoremap <C-J> <C-W><C-J>
+nnoremap <C-K> <C-W><C-K>
+nnoremap <C-L> <C-W><C-L>
+nnoremap <C-H> <C-W><C-H>
+
+" nnoremap <leader>p <cmd>lua require('telescope.builtin').find_files{hidden:true}<cr>
+nnoremap <leader>p <cmd>Telescope find_files hidden=true<cr>
+nnoremap <leader>gc <cmd>lua require('telescope.builtin').git_commits()<cr>
 nnoremap <leader>b <C-^>
-nnoremap <leader>f :EslintFixAll<cr>
+nnoremap <leader>fa :EslintFixAll<cr>
+nnoremap <leader>ff <cmd>lua require('telescope.builtin').live_grep()<cr>
+nnoremap <leader>tt <cmd>NvimTreeToggle<cr>
+nnoremap <leader>od <cmd>DiffviewOpen<cr>
+nnoremap <leader>cd <cmd>DiffviewClose<cr>
+
 
 
 autocmd BufWritePre *.tsx,*.ts,*.jsx,*.js,*.vue EslintFixAll
@@ -69,19 +85,22 @@ set completeopt=menu,menuone,noselect
 
 
 lua <<EOF
+require('nvim-tree').setup()
 require('nvim-ts-autotag').setup()
 require('nvim-autopairs').setup {}
 require'lspconfig'.volar.setup{
-    -- init_options = {
-    --     typescript = {
-    --       serverPath = 'C:/Users/iurlezaga/AppData/Local/Yarn/Data/global/node_modules/typescript/lib/tsserverlib.js'
-    --     }
-    -- },
     filetypes = {'typescript', 'javascript', 'javascriptreact', 'typescriptreact', 'vue', 'json'}
 }
 require'lspconfig'.eslint.setup{}
 require'lspconfig'.tsserver.setup{}
 require'lspconfig'.rust_analyzer.setup{}
+require'lspconfig'.golangci_lint_ls.setup{}
+require'treesitter-context'.setup{}
+require'nvim-treesitter.configs'.setup{
+    highlight = {
+        enable = true
+        }
+}
   -- Setup nvim-cmp.
     local has_words_before = function()
       local line, col = unpack(vim.api.nvim_win_get_cursor(0))
@@ -98,9 +117,6 @@ require'lspconfig'.rust_analyzer.setup{}
       -- REQUIRED - you must specify a snippet engine
       expand = function(args)
         vim.fn["vsnip#anonymous"](args.body) -- For `vsnip` users.
-        -- require('luasnip').lsp_expand(args.body) -- For `luasnip` users.
-        -- require('snippy').expand_snippet(args.body) -- For `snippy` users.
-        -- vim.fn["UltiSnips#Anon"](args.body) -- For `ultisnips` users.
       end,
     },
     window = {
@@ -135,9 +151,6 @@ require'lspconfig'.rust_analyzer.setup{}
     sources = cmp.config.sources({
       { name = 'nvim_lsp' },
       { name = 'vsnip' }, -- For vsnip users.
-      -- { name = 'luasnip' }, -- For luasnip users.
-      -- { name = 'ultisnips' }, -- For ultisnips users.
-      -- { name = 'snippy' }, -- For snippy users.
     }, {
       { name = 'buffer' },
     })
@@ -201,7 +214,7 @@ require'lspconfig'.rust_analyzer.setup{}
       vim.keymap.set('n', '<space>rn', vim.lsp.buf.rename, bufopts)
       vim.keymap.set('n', '<space>ca', vim.lsp.buf.code_action, bufopts)
       vim.keymap.set('n', 'gr', vim.lsp.buf.references, bufopts)
-      vim.keymap.set('n', '<space>f', vim.lsp.buf.formatting, bufopts)
+      vim.keymap.set('n', '<leader>fo', vim.lsp.buf.formatting, bufopts)
     end
 
     local lsp_flags = {
@@ -244,6 +257,11 @@ require'lspconfig'.rust_analyzer.setup{}
     flags = lsp_flags,
   }
   require('lspconfig')['rust_analyzer'].setup {
+    capabilities = capabilities,
+    on_attach = on_attach,
+    flags = lsp_flags,
+  }
+  require('lspconfig')['golangci_lint_ls'].setup {
     capabilities = capabilities,
     on_attach = on_attach,
     flags = lsp_flags,
